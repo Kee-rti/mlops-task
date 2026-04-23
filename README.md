@@ -1,4 +1,4 @@
-# MLOps Batch Job - Task 0
+# MLOps Batch Job
 
 This repository contains a minimal MLOps-style batch job in Python designed to process OHLCV data. It demonstrates reproducibility, observability, and deployment readiness by reading a configuration file, computing a rolling mean on closing prices, generating a binary trading signal, and outputting structured metrics alongside detailed execution logs.
 
