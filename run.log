@@ -1,0 +1,6 @@
+2026-04-23 20:46:23 - INFO - Job start: MLOps Batch Pipeline Initiated
+2026-04-23 20:46:23 - INFO - Config loaded and validated. Version: v1, Window: 5, Seed: 42
+2026-04-23 20:46:23 - INFO - Data loaded and validated. Rows to process: 10000
+2026-04-23 20:46:23 - INFO - Calculated rolling mean and handled window-1 NaNs via backfill.
+2026-04-23 20:46:23 - INFO - Generated trading signals.
+2026-04-23 20:46:23 - INFO - Job end + status: success. Signal rate: 0.4990, Latency: 42ms
