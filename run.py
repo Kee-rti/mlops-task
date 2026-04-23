@@ -5,6 +5,10 @@ import sys
 import time
 import traceback
 import os
+import pandas as pd
+import yaml
+import numpy as np
+from pathlib import Path
 
 
 #We set version="unknown" as a default just in case the script crashes before it even reads config.yaml (e.g., if the user types a bad CLI argument)
@@ -57,7 +61,77 @@ def main():
         # - Write success metrics to args.output
         # ---------------------------------------------------------
         
-        logging.info("Processing placeholder...") # Remove this later
+        # ==========================================
+        # 1. LOAD & VALIDATE CONFIG
+        # ==========================================
+        if not os.path.exists(args.config):
+            raise FileNotFoundError(f"Config file not found at {args.config}")
+            
+        with open(args.config, 'r') as f:
+            config = yaml.safe_load(f)
+            
+        if config is None or not isinstance(config, dict):
+            raise ValueError("Config is empty or not a valid YAML dictionary.")
+            
+        # Check required keys
+        required_keys = ['seed', 'window', 'version']
+        for key in required_keys:
+            if key not in config:
+                raise KeyError(f"Missing required config key: '{key}'")
+                
+        # Update the version 
+        config_version = config['version']
+        
+        # Set deterministic seeds
+        np.random.seed(config['seed'])
+        
+        logging.info(f"Config loaded and validated. Version: {config_version}, Window: {config['window']}, Seed: {config['seed']}")
+
+        # ==========================================
+        # 2. LOAD & VALIDATE DATASET
+        # ==========================================
+        #fix the csv (run once)
+        # inp = Path("data.csv - Sheet1.csv")
+        # out = Path("data.csv")
+        # with inp.open("r", encoding="utf-8") as f_in, out.open("w", encoding="utf-8", newline="") as f_out:
+        #     for line in f_in:
+        #         line = line.rstrip("\n")
+        #         if line.startswith('"') and line.endswith('"'):
+        #             line = line[1:-1]
+        #         f_out.write(line + "\n")
+
+        if not os.path.exists(args.input):
+            raise FileNotFoundError(f"Input file not found at {args.input}")
+            
+        
+
+        
+
+        # Read the CSV
+        try:
+            df = pd.read_csv(args.input)
+        except Exception as e:
+            raise ValueError(f"Failed to parse CSV: {str(e)}")
+            
+        # Validate dataset structure
+        if df.empty:
+            raise ValueError("The input dataset is completely empty.")
+            
+        if 'close' not in df.columns:
+            raise KeyError("The required column 'close' is missing from the dataset.")
+            
+
+        # Clean the close column (ensure it's numeric)
+        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        if df['close'].isna().any():
+            logging.warning("Found non-numeric/missing values in 'close'. Forward-filling to maintain row count.")
+            df['close'] = df['close'].ffill().bfill() # ffill first, bfill if the very first row is NaN
+
+        if df.empty:
+             raise ValueError("After cleaning invalid 'close' values, the dataset is empty.")
+
+        logging.info(f"Data loaded and validated. Rows to process: {len(df)}")
+        
         
         # Simulating a successful write for now
         logging.info("Job end + status: success")
