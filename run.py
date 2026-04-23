@@ -133,8 +133,62 @@ def main():
         logging.info(f"Data loaded and validated. Rows to process: {len(df)}")
         
         
+        # ==========================================
+        # 3. ROLLING MEAN
+        # ==========================================
+        # Calculate the rolling mean.
+        df['rolling_mean'] = df['close'].rolling(window=config['window']).mean()
+        
+        # REQUIREMENT: Define how to handle the first window-1 rows.
+        # DECISION: We will backfill (bfill) the NaN values. 
+        # This ensures we don't lose rows (keeping rows_processed = 10000)
+        # and avoids undefined math behavior when generating the signal.
+        df['rolling_mean'] = df['rolling_mean'].bfill()
+        
+        logging.info("Calculated rolling mean and handled window-1 NaNs via backfill.")
+
+        # ==========================================
+        # 4. GENERATE SIGNAL
+        # ==========================================
+        # signal = 1 if close > rolling_mean else 0
+        df['signal'] = (df['close'] > df['rolling_mean']).astype(int)
+        
+        logging.info("Generated trading signals.")
+
+        # ==========================================
+        # 5. METRICS + TIMING
+        # ==========================================
+        # Calculate metrics
+        rows_processed = len(df)
+        signal_rate = float(df['signal'].mean())
+        
+        # Calculate latency
+        end_time = time.time()
+        latency_ms = int((end_time - start_time) * 1000)
+
+        # Construct output dictionary
+        metrics_dict = {
+            "version": config_version,
+            "rows_processed": rows_processed,
+            "metric": "signal_rate",
+            "value": round(signal_rate, 4), # Rounded to 4 decimal places 
+            "latency_ms": latency_ms,
+            "seed": config['seed'],
+            "status": "success"
+        }
+
+        # Write to JSON file
+        with open(args.output, 'w') as f:
+            json.dump(metrics_dict, f, indent=2)
+            
+        # Print to stdout 
+        print(json.dumps(metrics_dict, indent=2))
+        
         # Simulating a successful write for now
-        logging.info("Job end + status: success")
+        logging.info(f"Job end + status: success. Signal rate: {signal_rate:.4f}, Latency: {latency_ms}ms")
+
+
+
 
     except Exception as e:
         # If ANYTHING goes wrong above, we catch it here.
